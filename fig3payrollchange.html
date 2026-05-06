@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Figure 3: Florida Manufacturing Concentrations Hit Hard by Slowing Trade Activity</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #ffffff;
+      padding: 20px 24px 16px;
+    }
+    .figure-label {
+      text-align: center;
+      color: #d02030;
+      font-weight: bold;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 3px;
+    }
+    .figure-title {
+      text-align: center;
+      color: #d02030;
+      font-weight: bold;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      text-align: left;
+      font-size: 11px;
+      color: #444444;
+      font-style: italic;
+      margin-bottom: 14px;
+    }
+    .chart-container {
+      position: relative;
+      /* Height scales with number of bars — 21 rows × ~33px each */
+      height: 700px;
+      width: 100%;
+    }
+    .source {
+      text-align: center;
+      font-size: 10px;
+      color: #888888;
+      margin-top: 10px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <p class="figure-label">Figure 3.</p>
+  <p class="figure-title">Florida Manufacturing Concentrations Hit Hard by Slowing Trade Activity</p>
+  <p class="subtitle">12-month change in payrolls in December 2025, thousands of persons</p>
+  <div class="chart-container">
+    <canvas id="fig3Chart"></canvas>
+  </div>
+  <p class="source">Source: Cato Institute</p>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script>
+    const canvas = document.getElementById('fig3Chart');
+    const chartCtx = canvas.getContext('2d');
+
+    // Data ordered top-to-bottom: most positive → most negative → total
+    const labels = [
+      'Fabricated metal products',
+      'Beverage, tobacco, and leather\nand allied products',
+      'Chemicals',
+      'Primary metals',
+      'Electrical equipment, appliances,\nand components',
+      'Nonmetallic mineral products',
+      'Paper',
+      'Textile products',
+      'Petroleum and coal products',
+      'Food',
+      'Textiles',
+      'Furniture and related products',
+      'Apparel',
+      'Miscellaneous durables',
+      'Printing and related support activities',
+      'Plastics and rubber products',
+      'Wood products',
+      'Machinery',
+      'Computers and electronic products',
+      'Transportation equipment',
+      'Total manufacturing'
+    ];
+
+    const values = [
+      8.8, 5.8, 5.4, 2.7, 2.2, 2.1, 1.1,
+      -0.5, -0.7, -0.8, -1.6, -3.1, -4,
+      -6, -7.6, -7.8, -9.9, -10.6, -17.9, -26.1,
+      -68
+    ];
+
+    // Color logic: positive = FTW red, negative = navy, total row = dark navy
+    const backgroundColors = values.map((v, i) => {
+      if (i === values.length - 1) return '#0D1730'; // total row
+      return v >= 0 ? '#D02030' : '#1A2E5E';
+    });
+
+    const hoverColors = values.map((v, i) => {
+      if (i === values.length - 1) return '#0a1020';
+      return v >= 0 ? '#a8001f' : '#0f1c3a';
+    });
+
+    new Chart(chartCtx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '12-month payroll change (thousands)',
+          data: values,
+          backgroundColor: backgroundColors,
+          hoverBackgroundColor: hoverColors,
+          borderWidth: 0,
+          borderRadius: 2,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 1600,
+          easing: 'easeOutQuart',
+          // Bars grow outward from zero
+          x: {
+            from: 0
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: true
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(255,255,255,0.97)',
+            borderColor: '#ddd',
+            borderWidth: 1,
+            titleColor: '#111',
+            bodyColor: '#333',
+            titleFont: { family: 'Arial', size: 12, weight: 'bold' },
+            bodyFont: { family: 'Arial', size: 12 },
+            padding: 10,
+            callbacks: {
+              title: function(items) {
+                // Clean up newline chars in label for tooltip
+                return items[0].label.replace('\n', ' ');
+              },
+              label: function(item) {
+                const val = item.parsed.x;
+                const sign = val >= 0 ? '+' : '';
+                return '  Change: ' + sign + val.toLocaleString() + 'k jobs';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            position: 'top',
+            title: {
+              display: false
+            },
+            grid: {
+              color: function(context) {
+                return context.tick.value === 0 ? '#999999' : '#eeebe6';
+              },
+              lineWidth: function(context) {
+                return context.tick.value === 0 ? 1.5 : 0.5;
+              }
+            },
+            ticks: {
+              color: '#555555',
+              font: { family: 'Arial', size: 11 },
+              callback: function(val) {
+                const sign = val >= 0 ? '+' : '';
+                return sign + val;
+              }
+            }
+          },
+          y: {
+            grid: { display: false },
+            ticks: {
+              color: function(context) {
+                // Bold the total row label
+                return context.index === labels.length - 1 ? '#111111' : '#333333';
+              },
+              font: function(context) {
+                return {
+                  family: 'Arial',
+                  size: 11,
+                  weight: context.index === labels.length - 1 ? 'bold' : 'normal'
+                };
+              },
+              // Wrap long labels — Chart.js handles \n in label arrays
+              maxRotation: 0,
+              autoSkip: false
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Figure 1: Manufacturing GDP Growth Closely Follows State Total</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #ffffff;
+      padding: 20px 24px 16px;
+    }
+    .figure-label {
+      text-align: center;
+      color: #d02030;
+      font-weight: bold;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 3px;
+    }
+    .figure-title {
+      text-align: center;
+      color: #d02030;
+      font-weight: bold;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 18px;
+    }
+    .chart-container {
+      position: relative;
+      height: 360px;
+      width: 100%;
+    }
+    .source {
+      text-align: center;
+      font-size: 10px;
+      color: #888888;
+      margin-top: 10px;
+      font-style: italic;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <p class="figure-label">Figure 1.</p>
+  <p class="figure-title">Manufacturing GDP Growth Closely Follows State Total</p>
+  <div class="chart-container">
+    <canvas id="fig1Chart"></canvas>
+  </div>
+  <p class="source">Source: U.S. Bureau of Economic Analysis, via FRED, Federal Reserve Bank of St. Louis (FLRQGSP, FLMANRQGSP). Q2 year-over-year percent change.</p>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script>
+    const canvas = document.getElementById('fig1Chart');
+    const chartCtx = canvas.getContext('2d');
+
+    const years = ['2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025'];
+
+    // Verified BEA data via FRED (FLRQGSP, FLMANRQGSP) — Q2 YoY %
+    const totalGDP     = [4.67, 3.25, 3.65, 3.45, 3.21, -6.46, 15.47, 6.19, 5.13, 3.36, 3.48];
+    const mfgGDP       = [11.93, 1.02, 2.17, 4.52, 1.21, -2.43, 13.51, 7.34, 0.37, 6.61, 2.72];
+
+    new Chart(chartCtx, {
+      type: 'line',
+      data: {
+        labels: years,
+        datasets: [
+          {
+            label: 'Florida total real GDP',
+            data: totalGDP,
+            borderColor: '#D02030',
+            backgroundColor: '#D02030',
+            borderWidth: 2.5,
+            pointRadius: 5,
+            pointHoverRadius: 8,
+            pointStyle: 'circle',
+            pointBorderColor: '#D02030',
+            pointBackgroundColor: '#D02030',
+            tension: 0.15,
+            order: 1
+          },
+          {
+            label: 'Florida manufacturing real GDP',
+            data: mfgGDP,
+            borderColor: '#0C2D5E',
+            backgroundColor: '#0C2D5E',
+            borderWidth: 2.5,
+            pointRadius: 5,
+            pointHoverRadius: 8,
+            pointStyle: 'rectRot',
+            pointBorderColor: '#0C2D5E',
+            pointBackgroundColor: '#0C2D5E',
+            tension: 0.15,
+            order: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 1400,
+          easing: 'easeInOutQuart'
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            align: 'center',
+            labels: {
+              font: { family: 'Arial, Helvetica, sans-serif', size: 12 },
+              color: '#333333',
+              padding: 24,
+              usePointStyle: true,
+              pointStyleWidth: 16
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(255,255,255,0.97)',
+            borderColor: '#ddd',
+            borderWidth: 1,
+            titleColor: '#111',
+            bodyColor: '#333',
+            titleFont: { family: 'Arial', size: 12, weight: 'bold' },
+            bodyFont: { family: 'Arial', size: 12 },
+            padding: 10,
+            callbacks: {
+              title: function(items) {
+                return items[0].label + ' (Q2 YoY)';
+              },
+              label: function(item) {
+                const val = item.parsed.y;
+                const sign = val >= 0 ? '+' : '';
+                return '  ' + item.dataset.label + ': ' + sign + val.toFixed(2) + '%';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Year (Q2)',
+              color: '#555555',
+              font: { family: 'Arial', size: 12 },
+              padding: { top: 8 }
+            },
+            grid: { color: '#f0ede8', lineWidth: 0.5 },
+            ticks: {
+              color: '#555555',
+              font: { family: 'Arial', size: 11 }
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Year-over-year growth (%)',
+              color: '#555555',
+              font: { family: 'Arial', size: 12 }
+            },
+            min: -10,
+            max: 18,
+            ticks: {
+              stepSize: 4,
+              callback: val => (val >= 0 ? '' : '−') + Math.abs(val) + '%',
+              color: '#555555',
+              font: { family: 'Arial', size: 11 }
+            },
+            grid: {
+              color: function(context) {
+                return context.tick.value === 0 ? '#9E9E9E' : '#e8e4df';
+              },
+              lineWidth: function(context) {
+                return context.tick.value === 0 ? 1.5 : 0.5;
+              }
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
