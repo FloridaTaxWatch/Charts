@@ -186,12 +186,20 @@
       });
     }
 
-    // Listen for the "go" signal from the parent page
+    function announceReady() {
+      if (window.parent === window) return;
+      try { window.parent.postMessage('ftw-chart-ready', '*'); } catch (e) {}
+    }
+
     window.addEventListener('message', function(e) {
       if (e.data === 'ftw-chart-animate') buildChart();
+      else if (e.data === 'ftw-chart-ping') announceReady();
     });
 
-    // Fallback: build anyway after 4s in case postMessage never arrives
+    // Tell the parent we're ready in case it's already listening.
+    announceReady();
+
+    // Last-resort fallback in case the handshake fails entirely.
     setTimeout(buildChart, 60000);
   </script>
 </body>
