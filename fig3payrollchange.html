@@ -186,21 +186,17 @@
       });
     }
 
-    function announceReady() {
-      if (window.parent === window) return;
-      try { window.parent.postMessage('ftw-chart-ready', '*'); } catch (e) {}
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', buildChart);
+    } else {
+      buildChart();
     }
 
+    // Allow the parent (or a manual console command) to retrigger; idempotent
+    // because buildChart is guarded by chartCreated.
     window.addEventListener('message', function(e) {
       if (e.data === 'ftw-chart-animate') buildChart();
-      else if (e.data === 'ftw-chart-ping') announceReady();
     });
-
-    // Tell the parent we're ready in case it's already listening.
-    announceReady();
-
-    // Last-resort fallback in case the handshake fails entirely.
-    setTimeout(buildChart, 60000);
   </script>
 </body>
 </html>
