@@ -130,9 +130,10 @@
           responsive: true,
           maintainAspectRatio: false,
           animation: {
-            duration: 1600,
-            easing: 'easeOutQuart',
-            x: { from: 0 }
+            duration: 650,
+            easing: 'easeOutCubic',
+            x: { from: 0 },
+            delay: context => context.dataIndex * 55
           },
           interaction: { mode: 'index', intersect: true },
           plugins: {
