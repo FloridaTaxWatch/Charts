@@ -80,7 +80,42 @@
       transform: rotate(45deg);
     }
 
-    /* Source footer */
+    /* Mini data table */
+    .data-table-wrap {
+      margin-top: 14px;
+      overflow-x: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .data-table td {
+      border: 1px solid #D0CCC6;
+      text-align: center;
+      padding: 4px 5px;
+      white-space: nowrap;
+      color: #333;
+      line-height: 1.3;
+    }
+    .data-table tr:first-child td {
+      background: #ECEAE5;
+      font-weight: 700;
+      color: #444;
+    }
+    .data-table .row-label {
+      text-align: left;
+      font-weight: 600;
+      background: #F5F3F0;
+      padding: 4px 8px;
+      white-space: nowrap;
+    }
+    .data-table tr:first-child .row-label {
+      background: #ECEAE5;
+    }
+    .data-table .pop-label  { color: #D02030; }
+    .data-table .mig-label  { color: #0C2D5E; }
     .source {
       text-align: center;
       font-size: 10px;
@@ -142,6 +177,29 @@
         <canvas id="popChart"></canvas>
       </div>
 
+      <!-- Mini data table -->
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <tbody>
+            <tr>
+              <td class="row-label"></td>
+              <td>2026</td><td>2027</td><td>2028</td><td>2029</td><td>2030</td>
+              <td>2031</td><td>2032</td><td>2033</td><td>2034</td><td>2035</td>
+            </tr>
+            <tr>
+              <td class="row-label pop-label">Population</td>
+              <td>23.76</td><td>24.06</td><td>24.36</td><td>24.64</td><td>24.90</td>
+              <td>25.15</td><td>25.39</td><td>25.61</td><td>25.83</td><td>26.03</td>
+            </tr>
+            <tr>
+              <td class="row-label mig-label">Daily Net Migration</td>
+              <td>895.3</td><td>870.7</td><td>844.9</td><td>814.8</td><td>784.9</td>
+              <td>761.1</td><td>736.7</td><td>716.2</td><td>701.9</td><td>689.3</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <p class="source">
         Source: REC Group
       </p>
@@ -158,7 +216,7 @@
     const population = [23.76, 24.06, 24.36, 24.64, 24.90, 25.15, 25.39, 25.61, 25.83, 26.03];
 
     // Daily net migration (column C — persons per day)
-    const migration  = [895, 871, 845, 815, 785, 761, 737, 716, 702, 689];
+    const migration  = [895.3, 870.7, 844.9, 814.8, 784.9, 761.1, 736.7, 716.2, 701.9, 689.3];
 
     // ── Chart ─────────────────────────────────────────────────────────────
     const ctx = document.getElementById('popChart').getContext('2d');

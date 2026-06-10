@@ -80,6 +80,43 @@
       transform: rotate(45deg);
     }
 
+    /* Mini data table */
+    .data-table-wrap {
+      margin-top: 14px;
+      overflow-x: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .data-table td {
+      border: 1px solid #D0CCC6;
+      text-align: center;
+      padding: 4px 5px;
+      white-space: nowrap;
+      color: #333;
+      line-height: 1.3;
+    }
+    .data-table tr:first-child td {
+      background: #ECEAE5;
+      font-weight: 700;
+      color: #444;
+    }
+    .data-table .row-label {
+      text-align: left;
+      font-weight: 600;
+      background: #F5F3F0;
+      padding: 4px 8px;
+      white-space: nowrap;
+    }
+    .data-table tr:first-child .row-label {
+      background: #ECEAE5;
+    }
+    .data-table .emp-label   { color: #0C2D5E; }
+    .data-table .unemp-label { color: #D02030; }
+
     /* Source footer */
     .source {
       text-align: center;
@@ -140,6 +177,29 @@
 
       <div class="chart-container">
         <canvas id="unempChart"></canvas>
+      </div>
+
+      <!-- Mini data table -->
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <tbody>
+            <tr>
+              <td class="row-label"></td>
+              <td>2026</td><td>2027</td><td>2028</td><td>2029</td><td>2030</td>
+              <td>2031</td><td>2032</td><td>2033</td><td>2034</td><td>2035</td>
+            </tr>
+            <tr>
+              <td class="row-label emp-label">Employment</td>
+              <td>10.1</td><td>10.2</td><td>10.4</td><td>10.5</td><td>10.7</td>
+              <td>10.8</td><td>10.9</td><td>11.0</td><td>11.2</td><td>11.3</td>
+            </tr>
+            <tr>
+              <td class="row-label unemp-label">Unemployment Rate</td>
+              <td>4.6</td><td>4.8</td><td>4.6</td><td>4.4</td><td>4.3</td>
+              <td>4.3</td><td>4.2</td><td>4.2</td><td>4.2</td><td>4.2</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <p class="source">
