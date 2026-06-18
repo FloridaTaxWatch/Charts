@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>680.26(B) Equipotential Bonding — Bonded Parts</title>
+<style>
+  /* ---------- RESET + BASE ---------- */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; background: transparent; }
+
+  /* ---------- FTW SHELL (matches existing figure template) ---------- */
+  .ftw-wrap {
+    font-family: Arial, Helvetica, sans-serif;
+    max-width: 680px;
+    margin: 0 auto;                 /* center inside the iframe */
+    border: 1px solid #E0DDD8;
+    background: white;
+  }
+  .ftw-header { background: #0C2D5E; padding: 16px 22px 14px; }
+  .ftw-header .figure-eyebrow {
+    font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.6);
+    text-transform: uppercase; letter-spacing: 0.1em; margin-top: 10px;
+  }
+  .ftw-header h2 {
+    font-size: 15px; font-weight: 700; color: white;
+    line-height: 1.25; margin-top: 4px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+
+  .chart-body { padding: 18px 22px 16px; }
+
+  /* ---------- CONTROL BAR (legend + grounded toggle) ---------- */
+  .controls {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px; margin-bottom: 6px;
+  }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #333; }
+  .legend-swatch { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
+  .legend-swatch.bonded { background: #0C2D5E; }
+  .legend-swatch.grounded { background: #0C2D5E; position: relative; }
+  .legend-swatch.grounded::after {
+    content: "G"; position: absolute; right: -3px; top: -5px;
+    background: #1a7e3b; color: #fff; font-size: 8px; font-weight: 700;
+    width: 12px; height: 12px; border-radius: 50%; line-height: 12px; text-align: center;
+    border: 1.5px solid #fff;
+  }
+  .legend-wire { width: 22px; height: 0; border-top: 2.5px dashed #B87333; }
+
+  .toggle-btn {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11px; font-weight: 700; color: #0C2D5E;
+    background: #fff; border: 1.5px solid #0C2D5E; border-radius: 5px;
+    padding: 6px 11px; cursor: pointer; transition: all .15s ease;
+    display: flex; align-items: center; gap: 7px; white-space: nowrap;
+  }
+  .toggle-btn:hover { background: #f1f4f9; }
+  .toggle-btn .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 1.5px solid #1a7e3b; background: transparent; transition: background .15s;
+  }
+  .toggle-btn[aria-pressed="true"] { background: #eef6f0; border-color: #1a7e3b; color: #14602d; }
+  .toggle-btn[aria-pressed="true"] .dot { background: #1a7e3b; }
+
+  /* ---------- DIAGRAM ---------- */
+  .diagram-wrap { position: relative; width: 100%; }
+  svg.scene { width: 100%; height: auto; display: block; touch-action: manipulation; }
+
+  /* nodes */
+  .node { cursor: pointer; }
+  .node .hit { fill: transparent; }                 /* generous tap target */
+  .node .nodeScale {
+    transition: transform .18s ease;
+    transform-box: fill-box; transform-origin: center;
+  }
+  .node:hover .nodeScale,
+  .node:focus-visible .nodeScale,
+  .node.selected .nodeScale { transform: scale(1.13); }
+  .node:focus { outline: none; }
+
+  .node .disc { fill: #0C2D5E; transition: fill .15s ease; }
+  .node .icon { fill: none; stroke: #ffffff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .node .icon .fillwhite { fill: #ffffff; stroke: none; }
+
+  /* selection / hover ring */
+  .node .ring {
+    fill: none; stroke: #D02030; stroke-width: 3; opacity: 0;
+    transition: opacity .15s ease;
+  }
+  .node:hover .ring, .node:focus-visible .ring { opacity: .45; }
+  .node.selected .ring { opacity: 1; }
+  .node.selected .disc { fill: #D02030; }
+
+  /* grounded "G" badge */
+  .gbadge { display: none; }
+  .node.grounded .gbadge { display: block; }
+  .gbadge circle { fill: #1a7e3b; stroke: #fff; stroke-width: 2; }
+  .gbadge text { fill: #fff; font: 700 12px Arial, sans-serif; }
+
+  /* grounded-highlight mode (toggle on) */
+  .show-grounded .node:not(.grounded):not(.shell) { opacity: .32; }
+  .show-grounded .node.grounded .gring {
+    opacity: 1; animation: gpulse 1.8s ease-in-out infinite;
+  }
+  .gring { fill: none; stroke: #1a7e3b; stroke-width: 2.5; opacity: 0; }
+  @keyframes gpulse { 0%,100% { stroke-opacity: .35; r: 30; } 50% { stroke-opacity: 1; r: 33; } }
+
+  /* labels (sit on the white body, so dark text) */
+  .nlabel { font: 700 11px Arial, sans-serif; fill: #1d3a66; }
+  .nlabel .g { fill: #1a7e3b; }
+
+  /* wires */
+  .wire {
+    fill: none; stroke: #B87333; stroke-width: 2.4;
+    stroke-dasharray: 6 7; stroke-linecap: round;
+    animation: flow 2.4s linear infinite;
+    transition: stroke .15s ease, stroke-width .15s ease;
+  }
+  .wire.active { stroke: #D02030; stroke-width: 3.4; animation-duration: 1s; }
+  @keyframes flow { to { stroke-dashoffset: -52; } }
+  .lug { fill: #B87333; stroke: #8a5523; stroke-width: 1; }
+
+  /* pool shell */
+  .pool-water { fill: #eaf2f8; }
+  .pool-grid { stroke: #9aa6b4; stroke-width: 0.8; }
+  .pool-frame { fill: none; stroke: #5d6b7d; stroke-width: 3; }
+  .pool-label { font: 700 11px Arial, sans-serif; fill: #44515f; text-anchor: middle; }
+  .node.shell.selected .pool-frame { stroke: #D02030; }
+  .node.shell .ring { stroke: #D02030; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wire { animation: none; }
+    .show-grounded .node.grounded .gring { animation: none; opacity: 1; }
+    .node .nodeScale { transition: none; }
+  }
+
+  /* ---------- INFO PANEL ---------- */
+  .info {
+    margin-top: 14px; border: 1px solid #E6E3DE; border-radius: 7px;
+    background: #FAFAF8; padding: 13px 15px; min-height: 92px;
+  }
+  .info .ihead { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .info .ititle { font-size: 13.5px; font-weight: 700; color: #0C2D5E; }
+  .info .ibadge {
+    font-size: 9.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .ibadge.bonded { background: rgba(12,45,94,.1); color: #0C2D5E; }
+  .ibadge.gnd { background: rgba(26,126,59,.14); color: #14602d; }
+  .info .idesc { font-size: 12px; color: #3a3a3a; line-height: 1.5; margin-top: 7px; }
+  .info .ihint { font-size: 11px; color: #8a8a8a; font-style: italic; margin-top: 7px; }
+
+  /* ---------- SPEC BOX ---------- */
+  .spec {
+    margin-top: 12px; border-left: 4px solid #B87333;
+    background: #FBF7F2; padding: 11px 14px; border-radius: 0 6px 6px 0;
+  }
+  .spec h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #8a5523; margin-bottom: 6px; }
+  .spec p { font-size: 11.5px; color: #3a3a3a; line-height: 1.5; }
+  .spec ul { margin: 4px 0 0 16px; }
+  .spec li { font-size: 11.5px; color: #3a3a3a; line-height: 1.55; }
+  .spec .gnote { margin-top: 8px; font-size: 11px; color: #14602d; }
+  .spec .gnote b { color: #1a7e3b; }
+
+  .source {
+    text-align: center; font-size: 10px; color: #888; font-style: italic;
+    margin-top: 11px; line-height: 1.4; padding: 0 6px 2px;
+  }
+</style>
+</head>
+<body>
+<div class="ftw-wrap">
+  <!-- ====== HEADER ====== -->
+  <div class="ftw-header">
+    <svg width="108" height="58" viewBox="0 0 428.37 229.23" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+      <g>
+        <path fill="#fff" d="M136.26,47.01c-6.23-.01-10.45-3.92-10.46-8.95h0c0-5.62,4.45-7.12,9.17-8.1,4.64-.99,9.52-1.22,9.65-5.05h0c-.07-3.34-3.97-4.31-6.34-4.32h0c-2.91,0-5.27.97-7.73,2.11l3.55-5.3,3.93-.37h0c6.78.05,11.62,1.85,11.72,9.27v9.43c0,2.48.02,4.24.76,5.51.72,1.21,2.05,1.84,4.38,2.15l-2.41,3.61c-4.08-.3-7.85-1.51-7.85-6.23h0v-10.43l-.44.22c-1.78.92-3.9,1.42-5.98,1.93h0c-2.97.68-6.63,1.41-6.64,5.51-.02,2.05.95,3.47,2.32,4.29,1.37.85,3.13,1.16,4.83,1.16,1.26,0,2.5-.29,3.73-.64l-3.06,3.9c-1.03.18-2.1.3-3.12.3h0"/>
+        <path fill="#fff" d="M109.12,47.01c-9.07-.02-15.61-5.71-15.62-14.93h0c0-8.35,6.16-15.05,14.61-15.05,3.45,0,6.91,1.29,9.5,3.58l.49.44v-.67h0v-8.3h-.3.3c0-2.63.34-4.98-1.98-6.68h3.57c1.26-.01,2.65.03,3.55-.76v34.93c0,2.62-.35,5.01,1.94,6.62h-7.08v-13.16h0c0-2.51.2-5.32-1.04-7.75l-.26.14.26-.14c-1.63-3.14-4.96-4.69-8.38-4.69h0c-2.61,0-4.97,1.19-6.67,3.12-1.7,1.92-2.75,4.57-2.75,7.5,0,3.25,1.16,6.31,3.17,8.56,2.01,2.25,4.88,3.7,8.27,3.7,1.66,0,3.1-.49,4.48-1.23l-2.95,4.51c-.99.27-1.99.28-3.09.28h0"/>
+        <path fill="#fff" d="M33.82,32.27h0c0-9.26,7.44-15.24,16.37-15.24,3.98,0,7.35,1.05,10.31,3.64h0c3.15,2.77,5.05,6.85,5.05,11.03,0,8.88-7.39,15.3-16.13,15.31-8.48,0-15.62-5.98-15.62-14.74M49.75,43.45c2.97,0,5.49-1.15,7.26-3.04,1.77-1.88,2.78-4.49,2.78-7.38h0c0-3.11-.83-6.2-2.53-8.54-1.7-2.34-4.31-3.9-7.76-3.9h0c-3,0-5.5,1.19-7.23,3.1-1.73,1.92-2.7,4.56-2.7,7.46s.88,6.01,2.59,8.34c1.7,2.34,4.27,3.97,7.59,3.97h0"/>
+        <path fill="#fff" d="M24.56,46.19c2.27-1.66,1.92-4.06,1.92-6.69h0V12.07h0c0-2.62.35-5.02-1.92-6.68h3.13c1.29-.01,2.83.08,3.92-.8v34.91c0,2.62-.41,5.03,1.9,6.69h-8.96Z"/>
+        <path fill="#fff" d="M.01,46.19c2.64-1.69,2.23-5.94,2.25-8.51h0V13.96h0c-.03-2.63.4-6.85-2.26-8.57h19.28c.95,0,1.96.12,2.84-.24v6.37c-2-1.98-4.57-2.21-7.32-2.21v.3-.3c-2.21,0-4.43.07-6.47.45l-.24.05v11.95h0v.29h7.84c.86,0,1.79.01,2.6-.3v5.62c-1.31-1.53-3.74-1.37-5.49-1.38h-4.95v11.68c.02,2.58-.5,6.78,2.1,8.51H.01Z"/>
+        <path fill="#fff" d="M84.25,46.19c2.32-1.66,1.97-4.06,1.97-6.69h0v-15.04h0c0-2.62.34-4.96-1.96-6.62h3.11c1.33,0,2.83-.04,3.98-.85v22.5c0,2.63-.34,5.03,1.97,6.69h-9.07Z"/>
+        <path fill="#fff" d="M88.57,13.47c-2.17,0-3.78-1.68-3.79-3.85h0c0-1.01.46-1.85,1.16-2.46.71-.61,1.67-.96,2.63-.96.98,0,1.85.41,2.48,1.08.62.66,1.01,1.56,1,2.52h0c0,.96-.38,1.89-1,2.56-.63.68-1.49,1.11-2.47,1.11h0"/>
+        <path fill="#fff" d="M66.11,46.39c2.33-1.66,1.97-4.07,1.97-6.71h0v-15.08h0c0-2.62.36-4.97-1.91-6.63h3.32c1.32-.01,2.73-.04,3.74-.68v4.35h0l.57.13c1.33-2.73,4.13-4.62,7.15-4.62l2,.16v4.89c-.75-.51-1.71-.67-2.6-.67h0c-2.44,0-4.27.66-5.44,2.19-1.16,1.53-1.66,3.85-1.66,7.12v8.83c0,2.63-.35,5.04,1.97,6.71h-9.09Z"/>
+      </g>
+      <path fill="#e31937" d="M389.21,85.92l5.47-7.29L346.1,2.12l-20.65-2.12.61,15.48-69.23-2.13-5.47-7.93h-94.73l14.92,15.37,3,4.4-1.75,1.23-1.25,1.88-.64,2.67,3.34,7.29,41.59-1.83,28.24,21.56h3.95l26.72-17.3,38.57,23.08-1.81,10.27c3.19.03,6.5.57,9.75.84v9.45c-2.61-1.71-5.44-2.82-8.92-2.82-.74,0-1.47.09-2.19.26l-3.92,22.21c.2.26.39.53.6.77,2.02,2.38,5.27,3.17,8.22,3.18,3.96,0,8.35-1.63,11.4-3.89l-2.6,8.83c-4.58,2.23-9.76,3.26-14.86,3.26-1.65,0-3.27-.16-4.83-.45l-.86,4.86,3.34,4.56,6.07-.91,5.47-2.73,5.16,1.51,3.04,3.95-10.55,14.96,46.68,72.48-12.75,14.88,39.17-11.84,39.47-53.14-39.16-78.33ZM351.76,114.97c3.13-2.7,2.88-5.41,2.87-9.37v-13.79c0-1.93.19-4.5-.73-6.38-.93-1.86-2.9-2.88-4.92-2.88-2.3,0-4.56,1.3-5.21,3.73h.01c-.55,1.92-.37,4.39-.37,6.32v13h0c.08,3.95-.25,6.66,2.79,9.37h-20.18c3.04-2.71,2.79-5.41,2.78-9.37v-38.48c0-3.96.26-6.67-2.78-9.37h11.19c2.31,0,4.27-.25,6.21-1.34v20.98h.3l.21.21c2.81-2.81,6.94-3.6,10.77-3.59,4.78,0,8.98,1.37,12.16,4.99,2.88,3.2,2.4,7.86,2.39,12.1v14.5c0,3.95-.25,6.67,2.87,9.37h-20.35Z"/>
+      <path fill="#fff" d="M323.83,112.86l2.6-8.83c-3.04,2.26-7.44,3.88-11.4,3.89-2.95,0-6.2-.79-8.22-3.18-.22-.24-.41-.51-.6-.77-2.18-2.91-3.15-7.05-3.16-10.41,0-2.92.34-6.32,2.35-8.87,1.19-1.52,2.89-2.49,4.73-2.93.72-.17,1.45-.26,2.19-.26,3.49,0,6.31,1.11,8.92,2.82v-9.45c-3.25-.27-6.55-.81-9.75-.84-.11,0-.22-.01-.32-.01-13.44.02-24.47,7.35-24.48,21.66,0,10.83,7.65,18.17,17.45,20,1.56.29,3.18.45,4.83.45,5.09,0,10.28-1.03,14.86-3.26Z"/>
+      <path fill="#fff" d="M276.36,74.86v-12.27h-5.5c-.83,7.33-6.88,13.8-14.38,14.56v5.49h5.28v19.01c0,2.24-.05,4.47.42,6.5.26,1.24.7,2.04.7,2.04.45.94,1.07,1.81,1.94,2.58,2.72,2.38,7.24,3.36,10.79,3.36,2.19,0,4.5-.42,6.75-.6l3.58-6.92c-2.25-.08-4.66-.25-6.71-1.62-2.95-1.91-2.87-4.42-2.86-7.53v-16.72h2.49c3.5-.03,5.02-.14,7.26,2.35v-9.93h-9.76v-.3Z"/>
+      <path fill="#fff" d="M256.58,105.32c-.92-2.06-.84-4.77-.84-7.71v-7.03c0-5.09-.45-10.05-4.71-13.3-3.34-2.49-7.94-3.28-12.04-3.27-3.71,0-7.33.25-10.85,1.18l-3.77,9.15c3.18-1.5,7.09-2.59,10.5-2.59,2.24.01,5.85.94,5.92,3.99-.16,4.11-6.32,4.44-12.3,6.09-6.03,1.62-11.84,4.25-11.86,12.18,0,3.93,2.24,7.98,5.66,10.03,2.45,1.53,6.28,2.07,9.23,2.07l4.3-.25,3.45-6.99c-.4.06-.8.11-1.24.11-1.67,0-3.09-.71-4.08-1.8-1-1.11-1.57-2.6-1.57-4.21.03-3.15,3.01-4.48,5.19-5.54h0s2.81-1.33,2.81-1.33l.42-.19v3.36c0,5.22-.33,9.09,3.68,12.87,3.27,3.01,7.3,3.95,11.73,3.97l3.35-.25,2.68-5.69c-.21-.49-.38-.98-.53-1.5-2.78-.38-4.34-1.59-5.11-3.36Z"/>
+      <path fill="#fff" d="M104.55,105.32c-.91-2.06-.83-4.77-.84-7.71v-7.03c0-5.09-.45-10.05-4.71-13.3-3.34-2.49-7.94-3.28-12.04-3.27-3.71,0-7.33.25-10.85,1.18l-3.77,9.15c3.17-1.51,7.09-2.58,10.5-2.58,2.24.01,5.86.94,5.92,3.99-.17,4.11-6.32,4.44-12.3,6.09-6.04,1.62-11.85,4.25-11.86,12.18,0,3.93,2.24,7.98,5.66,10.03,2.45,1.53,6.27,2.07,9.22,2.07l4.31-.25,3.45-6.99c-.4.06-.8.11-1.24.11-1.67,0-3.09-.71-4.09-1.8-1-1.11-1.57-2.6-1.57-4.21.02-3.15,3-4.48,5.17-5.54h0s0-.01,0-.01l2.81-1.32.43-.19v3.36c0,5.22-.34,9.09,3.68,12.87h0c3.26,3,7.29,3.95,11.73,3.97l3.34-.25,3.33-7.09c-3.53-.17-5.41-1.46-6.29-3.47Z"/>
+      <path fill="#fff" d="M213.25,57.76c1.59,1.75,2.84,3.93,2.84,6.55,0,2.27-.89,5-1.51,7.11h0s-7.39,26.19-7.39,26.19l-.05.21h-.71l-.07-.21-8.43-28.82c-.97-3.15-2.03-6.16-2.03-9.57,0-.52.14-1.06.31-1.46h-17.62c2.07,1.96,3.74,6.39,3.76,9.02,0,1.83-.89,4.99-1.33,6.74l-6.15,24.07-.06.23h-.72l-.06-.23-10.69-39.83h-18.31c3,2.54,4.38,5.62,5.49,9.46l9.57,32.86c1.77,5.99,2.84,9.17,8.39,12.48,2.53,1.52,5.9,2.95,8.85,3.35l9.07-34.63.26-1.02.31,1.01,6.51,21.26c1.41,4.65,2.83,7.5,7.23,9.93h0c2.71,1.53,5.67,2.88,8.7,3.6l17.89-58.3h-14.09Z"/>
+      <path fill="#fff" d="M369.25,105.61v-14.5c.01-4.24.49-8.9-2.39-12.1-3.18-3.62-7.39-4.99-12.16-4.99-3.83,0-7.96.78-10.77,3.59l-.21-.21h-.3v-20.98c-1.94,1.09-3.9,1.34-6.21,1.34h-11.19c3.04,2.7,2.79,5.41,2.78,9.37v38.48c0,3.95.26,6.66-2.78,9.37h20.18c-3.04-2.71-2.7-5.41-2.79-9.36h0v-13.01c0-1.92-.18-4.39.37-6.32h-.01c.66-2.44,2.92-3.74,5.21-3.73,2.03,0,3.99,1.02,4.92,2.88.92,1.88.73,4.45.73,6.38v13.79c0,3.95.26,6.67-2.87,9.37h20.35c-3.12-2.7-2.88-5.41-2.87-9.37Z"/>
+      <path fill="#fff" d="M149.07,108.58l-9.93-16.18-.11-.15.12-.16,12.25-16.93h-13.6c.81.71,1.44,1.85,1.45,3.04-.01,2.44-1.82,4.66-3.04,6.32l-.97,1.32-.21.29-.24-.27c-3.28-3.63-5.07-7.2-5.53-10.7h0s-18.23,0-18.23,0c2.42,1.58,3.77,4.11,5.34,6.57l8.34,13.18.11.17-.12.16-14.52,19.73h14.6c-.91-.92-1.84-2.26-1.85-3.84,0-1.62,1.03-2.97,1.9-4.2h0s3.43-5.1,3.43-5.1l.27-.39.24.41,3.16,5.53c1.4,2.46,2.91,5.01,3.8,7.51l.02.05v.02h18.47c-2.22-1.65-3.64-4.08-5.13-6.4Z"/>
+      <path fill="#fff" d="M60.04,67.17l.21-.06c1.53-.45,2.97-.54,4.56-.54,2.93,0,5.61.76,7.1,3.3l2.72-12.1h-40.44s-1.4-.23-1.4-.23l-3.16,12.49c3.34-2.29,5.98-3.29,10.06-3.28,1.57,0,2.92,0,4.46.36l.23.06v35.55c-.01,4.38.62,9.35-3.41,12.27h22.76c-3.62-3.54-3.7-7.57-3.69-12.44v-35.36Z"/>
+    </svg>
+    <div class="figure-eyebrow">Figure 17.</div>
+    <h2>680.26(B) Equipotential Bonding — Bonded Parts</h2>
+  </div>
+
+  <!-- ====== BODY ====== -->
+  <div class="chart-body">
+
+    <!-- control bar -->
+    <div class="controls">
+      <div class="legend">
+        <div class="legend-item"><span class="legend-swatch bonded"></span>Bonded part</div>
+        <div class="legend-item"><span class="legend-swatch grounded"></span>Bonded &amp; grounded (G)</div>
+        <div class="legend-item"><span class="legend-wire"></span>#8 AWG copper bond</div>
+      </div>
+      <button id="gToggle" class="toggle-btn" aria-pressed="false">
+        <span class="dot"></span> Highlight grounded parts
+      </button>
+    </div>
+
+    <!-- interactive diagram (built by JS into #scene) -->
+    <div class="diagram-wrap">
+      <div id="scene"></div>
+    </div>
+
+    <!-- info panel -->
+    <div class="info" id="info"><!-- filled by JS --></div>
+
+    <!-- bonding spec -->
+    <div class="spec">
+      <h3>Bonding method &mdash; 680.26(B)(1) through (B)(7)</h3>
+      <p>The parts above are bonded together using:</p>
+      <ul>
+        <li>Solid copper conductor &mdash; insulated, covered, or bare &mdash; not smaller than <b>8&nbsp;AWG</b>, or</li>
+        <li>Rigid metal conduit of brass or other identified corrosion-resistant metal.</li>
+      </ul>
+      <p class="gnote"><b>(G)</b> = also required to be grounded (connected to the equipment grounding system), in addition to being bonded.</p>
+    </div>
+
+    <p class="source">Source: National Electrical Code (NEC) &sect; 680.26(B)</p>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   EQUIPOTENTIAL BONDING — INTERACTIVE FIGURE
+   How it works (plain-English overview):
+   1. COMPONENTS[] below is the single source of truth — each entry is one metal
+      part around the pool, with its position, label, grounding status, and the
+      blurb that appears in the info panel when it's tapped.
+   2. buildScene() turns that data into one big SVG string (pool + wires + nodes)
+      and drops it into the page.
+   3. We then wire up hover, click/tap, keyboard, the "(G)" toggle, and the
+      info panel.
+   To edit content later: change the COMPONENTS array. Nothing else needs touching.
+============================================================================ */
+
+/* --- geometry of the central pool (the "common bonding grid") --- */
+var POOL = { x: 276, y: 230, w: 150, h: 116, cx: 351, cy: 288 };
+
+/* --- the metal parts, each bonds back to the pool --- */
+/* x,y       = center of the node disc (in SVG viewBox units)
+   ax,ay     = the point on the pool where this part's bond wire attaches
+   grounded  = true if it ALSO must be grounded (gets a green "G")
+   lx,ly     = label anchor point;  align = text-anchor for the label
+   label     = array of text lines (kept short so they fit)
+   icon      = inner SVG for the little white glyph (drawn around 0,0)        */
+var COMPONENTS = [
+  { id:'junction', label:['Junction boxes'], grounded:true,
+    x:112, y:74, ax:294, ay:236, lx:112, ly:112, align:'middle',
+    title:'Junction Boxes',
+    desc:'Deck boxes and junction boxes serving pool equipment are tied into the bonding grid and also connected to the equipment grounding system.',
+    icon:'<rect class="icon" x="-9" y="-7" width="18" height="14" rx="2"/><line class="icon" x1="-9" y1="-1" x2="-13" y2="-1"/><line class="icon" x1="9" y1="3" x2="13" y2="3"/>' },
+
+  { id:'diving', label:['Diving boards'], grounded:false,
+    x:292, y:58, ax:322, ay:230, lx:292, ly:26, align:'middle',
+    title:'Diving Boards',
+    desc:'Metal diving-board stands, bases, and platforms within reach of the water are bonded.',
+    icon:'<line class="icon" x1="-11" y1="-4" x2="9" y2="-7"/><line class="icon" x1="-7" y1="-4" x2="-7" y2="8"/><line class="icon" x1="-11" y1="8" x2="-3" y2="8"/>' },
+
+  { id:'drains', label:['Drains'], grounded:false,
+    x:470, y:62, ax:398, ay:232, lx:470, ly:30, align:'middle',
+    title:'Drains',
+    desc:'Metal main drains, sumps, and drain covers built into the pool structure are bonded.',
+    icon:'<circle class="icon" r="9"/><line class="icon" x1="-8" y1="-4" x2="8" y2="-4"/><line class="icon" x1="-9" y1="0" x2="9" y2="0"/><line class="icon" x1="-8" y1="4" x2="8" y2="4"/>' },
+
+  { id:'ladders', label:['Ladders'], grounded:false,
+    x:614, y:132, ax:424, ay:252, lx:614, ly:170, align:'middle',
+    title:'Ladders &amp; Rails',
+    desc:'Metal ladders, handrails, grab rails, and their anchor cups are bonded.',
+    icon:'<line class="icon" x1="-6" y1="-10" x2="-6" y2="10"/><line class="icon" x1="6" y1="-10" x2="6" y2="10"/><line class="icon" x1="-6" y1="-5" x2="6" y2="-5"/><line class="icon" x1="-6" y1="0" x2="6" y2="0"/><line class="icon" x1="-6" y1="5" x2="6" y2="5"/>' },
+
+  { id:'fences', label:['Fences / metal','door frames'], grounded:false,
+    x:636, y:276, ax:426, ay:282, lx:636, ly:312, align:'middle',
+    title:'Fences &amp; Metal Door Frames',
+    desc:'Fixed metal fencing, gates, and metal door frames within the bonding distance are bonded.',
+    icon:'<line class="icon" x1="-10" y1="-8" x2="-10" y2="9"/><line class="icon" x1="-3" y1="-8" x2="-3" y2="9"/><line class="icon" x1="4" y1="-8" x2="4" y2="9"/><line class="icon" x1="11" y1="-8" x2="11" y2="9"/><line class="icon" x1="-12" y1="-4" x2="12" y2="-4"/>' },
+
+  { id:'cover', label:['Pool cover','motor'], grounded:true,
+    x:608, y:398, ax:420, ay:330, lx:608, ly:434, align:'middle',
+    title:'Pool Cover Motor',
+    desc:'The automatic pool-cover drive motor is bonded and grounded.',
+    icon:'<rect class="icon" x="-10" y="-7" width="15" height="14" rx="2"/><circle class="icon" cx="-3" cy="0" r="3.5"/><line class="icon" x1="5" y1="-4" x2="11" y2="-4"/><line class="icon" x1="5" y1="4" x2="11" y2="4"/>' },
+
+  { id:'fixed', label:['Fixed metal \u2264 5 ft'], grounded:false,
+    x:452, y:486, ax:388, ay:345, lx:452, ly:520, align:'middle',
+    title:'Fixed Metal Within 5 ft',
+    desc:'Other fixed metal parts within 5 ft of the inside pool wall \u2014 and not separated by a permanent barrier \u2014 are bonded.',
+    icon:'<path class="icon" d="M-8 -8 L-8 6 L8 6"/><circle class="icon fillwhite" cx="-8" cy="-8" r="2.2"/><circle class="icon fillwhite" cx="8" cy="6" r="2.2"/>' },
+
+  { id:'inlet', label:['Water inlet'], grounded:false,
+    x:272, y:500, ax:322, ay:345, lx:272, ly:534, align:'middle',
+    title:'Water Inlet',
+    desc:'Metal water-inlet and return fittings set into the pool wall are bonded.',
+    icon:'<path class="icon" d="M-10 9 L-10 -2 Q-10 -8 -4 -8 L9 -8"/><rect class="icon" x="6" y="-11" width="7" height="6" rx="1"/>' },
+
+  { id:'pump', label:['Water pump'], grounded:true,
+    x:92, y:430, ax:276, ay:330, lx:92, ly:466, align:'middle',
+    title:'Water Pump',
+    desc:'The pool pump motor is bonded and grounded.',
+    icon:'<circle class="icon" r="8"/><circle class="icon fillwhite" r="2.4"/><rect class="icon" x="-9" y="8" width="18" height="3.5" rx="1"/>' },
+
+  { id:'heater', label:['Water heater'], grounded:true,
+    x:66, y:252, ax:276, ay:268, lx:66, ly:290, align:'middle',
+    title:'Water Heater',
+    desc:'The pool/spa heater is bonded and grounded.',
+    icon:'<rect class="icon" x="-7" y="-10" width="14" height="20" rx="3"/><line class="icon" x1="-7" y1="-2" x2="7" y2="-2"/><path class="icon" d="M-2 4 q2 -3 4 0 q-2 4 -4 0"/>' }
+];
+
+/* --- the central pool node (selectable like the others) --- */
+var SHELL = {
+  id:'shell', grounded:false,
+  title:'Reinforcing Steel \u2014 Conductive Pool Shell',
+  desc:'The structural rebar (or, for a non-conductive shell, an equivalent copper conductor grid) forms the common bonding grid. Every other metal part bonds back to this network so the whole pool area stays at the same electrical potential \u2014 the goal of equipotential bonding.'
+};
+
+var INTRO = {
+  title:'Equipotential bonding at a glance',
+  badge:null,
+  desc:'Every metal part in and around the pool is tied to a common bonding grid so they all sit at the same voltage \u2014 removing the difference in potential that could otherwise shock a swimmer. Tap any part to see what it is and whether it must also be grounded.',
+  hint:'Tap a part \u2022 or use the toggle above to spotlight the parts that must also be grounded.'
+};
+
+/* ---------- helpers ---------- */
+/* Build one bonding wire as a gently bowed quadratic curve from the pool
+   attach point (ax,ay) out to the node center (x,y). */
+function wirePath(c){
+  var mx=(c.ax+c.x)/2, my=(c.ay+c.y)/2;          // midpoint
+  var dx=c.x-c.ax, dy=c.y-c.ay;
+  var len=Math.sqrt(dx*dx+dy*dy)||1;
+  var nx=-dy/len, ny=dx/len;                       // perpendicular unit vector
+  var bow=16;                                      // how much the wire bows
+  var cxp=mx+nx*bow, cyp=my+ny*bow;                // control point
+  return 'M'+c.ax+' '+c.ay+' Q'+cxp.toFixed(1)+' '+cyp.toFixed(1)+' '+c.x+' '+c.y;
+}
+
+/* Build one node group (disc + icon + rings + G badge). */
+function nodeSVG(c){
+  var g = c.grounded ? ' grounded' : '';
+  var s = '<g class="node'+g+'" data-id="'+c.id+'" tabindex="0" role="button" '+
+          'aria-label="'+c.title.replace(/&amp;/g,'and')+'">';
+  s += '<circle class="hit" cx="'+c.x+'" cy="'+c.y+'" r="34"/>';
+  // positioning group uses the transform ATTRIBUTE; the inner .nodeScale group
+  // uses a CSS transform for the hover/select scale. Keeping them on separate
+  // elements prevents the CSS scale from wiping out the translate.
+  s += '<g transform="translate('+c.x+','+c.y+')">';
+  s += '<g class="nodeScale">';
+  s += '<circle class="gring" r="30"/>';
+  s += '<circle class="ring" r="29"/>';
+  s += '<circle class="disc" r="24"/>';
+  s += c.icon;
+  s += '<g class="gbadge" transform="translate(17,-17)"><circle r="9"/>'+
+       '<text text-anchor="middle" dy="4.5">G</text></g>';
+  s += '</g></g>'; // end nodeScale + positioning group
+  // label (separate <text> so it does NOT scale, but kept INSIDE the node
+  // group so opacity dimming in grounded-highlight mode applies to it too)
+  var lines='';
+  for (var i=0;i<c.label.length;i++){
+    var t=c.label[i];
+    lines += '<tspan x="'+c.lx+'" dy="'+(i===0?0:13)+'">'+t+'</tspan>';
+  }
+  if (c.grounded){ lines += '<tspan class="g" dx="4">(G)</tspan>'; }
+  s += '<text class="nlabel" x="'+c.lx+'" y="'+c.ly+'" text-anchor="'+c.align+'">'+lines+'</text>';
+  s += '</g>'; // end node
+  return s;
+}
+
+/* ---------- build the whole scene ---------- */
+function buildScene(){
+  var svg='<svg class="scene" viewBox="0 0 700 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pool equipotential bonding diagram">';
+
+  // transparent background rect — click to deselect
+  svg += '<rect id="bg" x="0" y="0" width="700" height="560" fill="transparent"/>';
+
+  // grid clip for the pool water
+  svg += '<defs><clipPath id="poolClip"><rect x="'+POOL.x+'" y="'+POOL.y+'" width="'+POOL.w+'" height="'+POOL.h+'" rx="12"/></clipPath></defs>';
+
+  // wires first (so they sit UNDER the nodes)
+  svg += '<g id="wires">';
+  for (var i=0;i<COMPONENTS.length;i++){
+    svg += '<path class="wire" data-wire="'+COMPONENTS[i].id+'" d="'+wirePath(COMPONENTS[i])+'"/>';
+  }
+  svg += '</g>';
+
+  // copper bonding lugs where wires meet the pool
+  svg += '<g id="lugs">';
+  for (var j=0;j<COMPONENTS.length;j++){
+    svg += '<circle class="lug" cx="'+COMPONENTS[j].ax+'" cy="'+COMPONENTS[j].ay+'" r="3"/>';
+  }
+  svg += '</g>';
+
+  // ---- the pool (central node) ----
+  svg += '<g class="node shell" data-id="shell" tabindex="0" role="button" aria-label="Reinforcing steel, conductive pool shell">';
+  svg += '<g class="nodeScale">';
+  svg += '<circle class="ring" cx="'+POOL.cx+'" cy="'+POOL.cy+'" r="'+(POOL.w/2+10)+'"/>';
+  // water fill
+  svg += '<rect class="pool-water" x="'+POOL.x+'" y="'+POOL.y+'" width="'+POOL.w+'" height="'+POOL.h+'" rx="12"/>';
+  // rebar grid
+  var grid='';
+  for (var gx=POOL.x+12; gx<POOL.x+POOL.w; gx+=14){ grid+='<line class="pool-grid" x1="'+gx+'" y1="'+POOL.y+'" x2="'+gx+'" y2="'+(POOL.y+POOL.h)+'"/>'; }
+  for (var gy=POOL.y+12; gy<POOL.y+POOL.h; gy+=14){ grid+='<line class="pool-grid" x1="'+POOL.x+'" y1="'+gy+'" x2="'+(POOL.x+POOL.w)+'" y2="'+gy+'"/>'; }
+  svg += '<g clip-path="url(#poolClip)">'+grid+'</g>';
+  // frame
+  svg += '<rect class="pool-frame" x="'+POOL.x+'" y="'+POOL.y+'" width="'+POOL.w+'" height="'+POOL.h+'" rx="12"/>';
+  svg += '</g>';
+  svg += '<text class="pool-label" x="'+POOL.cx+'" y="'+(POOL.cy-4)+'">Reinforcing steel</text>';
+  svg += '<text class="pool-label" x="'+POOL.cx+'" y="'+(POOL.cy+11)+'">for pool</text>';
+  svg += '</g>';
+
+  // ---- the surrounding parts ----
+  svg += '<g id="nodes">';
+  for (var k=0;k<COMPONENTS.length;k++){ svg += nodeSVG(COMPONENTS[k]); }
+  svg += '</g>';
+
+  svg += '</svg>';
+  document.getElementById('scene').innerHTML = svg;
+}
+
+/* ---------- info panel rendering ---------- */
+function renderInfo(d){
+  var html='<div class="ihead"><span class="ititle">'+d.title+'</span>';
+  if (d.id==='shell'){ html += '<span class="ibadge bonded">Common bonding grid</span>'; }
+  else if (d.badge!==null && d.grounded!==undefined){
+    html += d.grounded
+      ? '<span class="ibadge gnd">Bonded &amp; grounded (G)</span>'
+      : '<span class="ibadge bonded">Bonded</span>';
+  }
+  html += '</div>';
+  html += '<div class="idesc">'+d.desc+'</div>';
+  if (d.hint){ html += '<div class="ihint">'+d.hint+'</div>'; }
+  document.getElementById('info').innerHTML = html;
+}
+
+/* ---------- interaction state ---------- */
+var selected=null;
+
+function lookup(id){
+  if (id==='shell') return SHELL;
+  for (var i=0;i<COMPONENTS.length;i++){ if (COMPONENTS[i].id===id) return COMPONENTS[i]; }
+  return null;
+}
+function setWire(id,on){
+  var w=document.querySelector('.wire[data-wire="'+id+'"]');
+  if (w){ w.classList.toggle('active',on); }
+}
+function select(id){
+  // clear old
+  if (selected){
+    var prev=document.querySelector('.node[data-id="'+selected+'"]');
+    if (prev) prev.classList.remove('selected');
+    setWire(selected,false);
+  }
+  selected=id;
+  var node=document.querySelector('.node[data-id="'+id+'"]');
+  if (node) node.classList.add('selected');
+  setWire(id,true);
+  renderInfo(lookup(id));
+}
+function deselect(){
+  if (selected){
+    var prev=document.querySelector('.node[data-id="'+selected+'"]');
+    if (prev) prev.classList.remove('selected');
+    setWire(selected,false);
+    selected=null;
+  }
+  renderInfo(INTRO);
+}
+
+/* ---------- wire everything up ---------- */
+function init(){
+  buildScene();
+  renderInfo(INTRO);
+
+  var nodes=document.querySelectorAll('.node');
+  nodes.forEach(function(node){
+    var id=node.getAttribute('data-id');
+    // hover preview lights the wire (without committing a selection)
+    node.addEventListener('mouseenter',function(){ if (selected!==id) setWire(id,true); });
+    node.addEventListener('mouseleave',function(){ if (selected!==id) setWire(id,false); });
+    // click / tap selects
+    node.addEventListener('click',function(e){ e.stopPropagation(); select(id); });
+    // keyboard: Enter or Space
+    node.addEventListener('keydown',function(e){
+      if (e.key==='Enter'||e.key===' '){ e.preventDefault(); select(id); }
+    });
+  });
+
+  // click empty space to reset
+  var bg=document.getElementById('bg');
+  if (bg) bg.addEventListener('click',deselect);
+
+  // "(G)" highlight toggle
+  var btn=document.getElementById('gToggle');
+  btn.addEventListener('click',function(){
+    var on=document.body.classList.toggle('show-grounded');
+    btn.setAttribute('aria-pressed', on?'true':'false');
+    btn.lastChild.textContent = on ? ' Showing grounded parts' : ' Highlight grounded parts';
+  });
+}
+
+document.addEventListener('DOMContentLoaded',init);
+
+// Auto-resize
+(function() {
+  function sendHeight() {
+    var h = document.documentElement.scrollHeight;
+    window.parent.postMessage({ ftwHeight: h, ftwSrc: window.location.href }, '*');
+  }
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(sendHeight).observe(document.body);
+  } else {
+    window.addEventListener('load', sendHeight);
+  }
+  window.addEventListener('load', sendHeight);
+})();
+</script>
+</body>
+</html>
