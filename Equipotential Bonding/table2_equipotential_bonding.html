@@ -125,5 +125,19 @@ tbody td.bonding { color: #333; font-size: 11.5px; font-weight: 600; }
   </div>
 </div>
 
+<script>
+  (function() {
+    function sendHeight() {
+      var h = document.documentElement.scrollHeight;
+      window.parent.postMessage({ ftwHeight: h, ftwSrc: window.location.href }, '*');
+    }
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(sendHeight).observe(document.body);
+    } else {
+      window.addEventListener('load', sendHeight);
+    }
+    window.addEventListener('load', sendHeight);
+  })();
+</script>
 </body>
 </html>
